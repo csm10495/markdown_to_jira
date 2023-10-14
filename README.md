@@ -37,7 +37,7 @@ Consider that this was my first time writing an extension, so don't expect great
 
 
 ##### Developers
-that runs with Chrome and Firefox. To work around vendor specific issues,
+Runs with Chrome and Firefox. To work around vendor specific issues,
 [Webpack](https://webpack.js.org/) is used to build the packages.
 
 ###### Build
