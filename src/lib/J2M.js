@@ -4,17 +4,40 @@
 	/**
 	 * Takes Jira markup and converts it to Markdown.
 	 *
+	 * https://jira.atlassian.com/secure/WikiRendererHelpAction.jspa?section=all
+	 *
 	 * @param {string} input - Jira markup text
 	 * @returns {string} - Markdown formatted text
 	 */
 	function toM(input) {
-		input = input.replace(/^h([0-6])\.(.*)$/gm, function (match,level,content) {
-			return Array(parseInt(level) + 1).join('#') + content;
+
+		input = input.replace(/^bq\.(.*)$/gm, function (match, content) {
+			return '> ' + content + "\n";
 		});
 
 		input = input.replace(/([*_])(.*)\1/g, function (match,wrapper,content) {
 			var to = (wrapper === '*') ? '**' : '*';
 			return to + content + to;
+		});
+
+		// multi-level numbered list
+		input = input.replace(/^((?:#|-|\+|\*)+) (.*)$/gm, function (match, level, content) {
+			var len = 2;
+			var prefix = '1.';
+			if (level.length > 1) {
+				len = parseInt((level.length - 1) * 4) + 2;
+			}
+
+			// take the last character of the level to determine the replacement
+			var prefix = level[level.length - 1];
+			if (prefix == '#') prefix = '1.';
+
+			return Array(len).join(" ") + prefix + ' ' + content;
+		});
+
+		// headers, must be after numbered lists
+		input = input.replace(/^h([0-6])\.(.*)$/gm, function (match,level,content) {
+			return Array(parseInt(level) + 1).join('#') + content;
 		});
 
 		input = input.replace(/\{\{([^}]+)\}\}/g, '`$1`');
@@ -24,12 +47,29 @@
 		input = input.replace(/~([^~]*)~/g, '<sub>$1</sub>');
 		input = input.replace(/-([^-]*)-/g, '-$1-');
 
-		input = input.replace(/\{code(:([a-z]+))?\}([^]*)\{code\}/gm, '```$2$3```');
+		input = input.replace(/\{code(:([a-z]+))?\}([^]*?)\{code\}/gm, '```$2$3```');
+		input = input.replace(/\{quote\}([^]*)\{quote\}/gm, function(match, content) {
+			lines = content.split(/\r?\n/gm);
 
-		input = input.replace(/\[(.+?)\|(.+)\]/g, '[$1]($2)');
-		input = input.replace(/\[(.+?)\]([^\(]*)/g, '<$1>$2');
+			for (var i = 0; i < lines.length; i++) {
+				lines[i] = '> ' + lines[i];
+			}
+
+			return lines.join("\n");
+		});
+
+		// Images with alt= among their parameters
+		input = input.replace(/!([^|\n\s]+)\|([^\n!]*)alt=([^\n!\,]+?)(,([^\n!]*))?!/g, '![$3]($1)');
+		// Images with just other parameters (ignore them)
+		input = input.replace(/!([^|\n\s]+)\|([^\n!]*)!/g, '![]($1)');
+		// Images without any parameters or alt
+		input = input.replace(/!([^\n\s!]+)!/g, '![]($1)');
+
+		input = input.replace(/\[([^|]+)\|(.+?)\]/g, '[$1]($2)');
+		input = input.replace(/\[(.+?)\]([^\(]+)/g, '<$1>$2');
 
 		input = input.replace(/{noformat}/g, '```');
+		input = input.replace(/{color:([^}]+)}([^]*?){color}/gm, '<span style="color:$1">$2</span>');
 
 		// Convert header rows of tables by splitting input on lines
 		lines = input.split(/\r?\n/gm);
@@ -78,25 +118,25 @@
 		var START = 'J2MBLOCKPLACEHOLDER';
 		var replacementsList = [];
 		var counter = 0;
-		
+
 		input = input.replace(/`{3,}(\w+)?((?:\n|.)+?)`{3,}/g, function(match, synt, content) {
-		    var code = '{code';
-		
-		    if (synt) {
-		        code += ':' + synt;
-		    }
-		
-		    code += '}' + content + '{code}';
-		    var key = START + counter++ + '%%';
-		    replacementsList.push({key: key, value: code});
-		    return key;
+			var code = '{code';
+
+			if (synt) {
+				code += ':' + synt;
+			}
+
+			code += '}' + content + '{code}';
+			var key = START + counter++ + '%%';
+			replacementsList.push({key: key, value: code});
+			return key;
 		});
-		
+
 		input = input.replace(/`([^`]+)`/g, function(match, content) {
-		    var code = '{{'+ content + '}}';
-		    var key = START + counter++ + '%%';
-		    replacementsList.push({key: key, value: code});
-		    return key;
+			var code = '{{'+ content + '}}';
+			var key = START + counter++ + '%%';
+			replacementsList.push({key: key, value: code});
+			return key;
 		});
 
 		input = input.replace(/`([^`]+)`/g, '{{$1}}');
@@ -113,14 +153,24 @@
 			var to = (wrapper.length === 1) ? '_' : '*';
 			return to + content + to;
 		});
-		// Make multi-level bulleted lists work
-  		input = input.replace(/^(\s*)- (.*)$/gm, function (match,level,content) {
-    			var len = 2;
-    			if(level.length > 0) {
-        			len = parseInt(level.length/4.0) + 2;
-    			}
-    			return Array(len).join("-") + ' ' + content;
-  		});
+
+		// multi-level bulleted list
+		input = input.replace(/^(\s*)- (.*)$/gm, function (match,level,content) {
+			var len = 2;
+			if(level.length > 0) {
+				len = parseInt(level.length/4.0) + 2;
+			}
+			return Array(len).join("-") + ' ' + content;
+		});
+
+		// multi-level numbered list
+		input = input.replace(/^(\s+)1. (.*)$/gm, function (match, level, content) {
+			var len = 2;
+			if (level.length > 1) {
+				len = parseInt(level.length / 4) + 2;
+			}
+			return Array(len).join("#") + ' ' + content;
+		});
 
 		var map = {
 			cite: '??',
@@ -136,15 +186,22 @@
 			return to + content + to;
 		});
 
+		input = input.replace(/<span style="color:(#[^"]+)">([^]*?)<\/span>/gm, '{color:$1}$2{color}');
+
 		input = input.replace(/~~(.*?)~~/g, '-$1-');
+
+		// Images without alt
+		input = input.replace(/!\[\]\(([^)\n\s]+)\)/g, '!$1!');
+		// Images with alt
+		input = input.replace(/!\[([^\]\n]+)\]\(([^)\n\s]+)\)/g, '!$2|alt=$1!');
 
 		input = input.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '[$1|$2]');
 		input = input.replace(/<([^>]+)>/g, '[$1]');
 
 		// restore extracted sections
 		for(var i =0; i < replacementsList.length; i++){
-		    var sub = replacementsList[i];
-		    input = input.replace(sub["key"], sub["value"]);
+			var sub = replacementsList[i];
+			input = input.replace(sub["key"], sub["value"]);
 		}
 
 		// Convert header rows of tables by splitting input on lines

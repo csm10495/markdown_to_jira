@@ -1,0 +1,4 @@
+{
+    "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+    "postCreateCommand": "yarn install && sudo ln -s  $(pwd)/node_modules/.bin/webpack /usr/local/bin/webpack"
+}

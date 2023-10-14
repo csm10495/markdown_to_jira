@@ -1,9 +1,10 @@
-[Chrome Extension](https://chrome.google.com/webstore/detail/jjmmhbaklhogjgcccbmhfllhmfdamagg)  
-[Firefox Extension](https://addons.mozilla.org/en-US/firefox/addon/markdown-to-jira/?src=cb-dl-created)  
+This fork updates the original a bit. It uses a more recent J2M, and moves manifest v3.
+
+Also for building, it provides a .devcontainer.json environment.
 
 -----------------------------
 
-**Markdown to JIRA** is just a tiny wrapper around [J2M](http://j2m.fokkezb.nl/), a javascript library that converts Markdown to JIRA markup (and the other way around) that does all the work.  
+**Markdown to JIRA** is just a tiny wrapper around [J2M](http://j2m.fokkezb.nl/), a javascript library that converts Markdown to JIRA markup (and the other way around) that does all the work.
 It's inspired by the much more powerful [Markdown Here](http://markdown-here.com/) extension, that converts Markdown to HTML (I use it for Gmail).
 
 This extension adds an entry to your right-click menu, called `JIRA Formatting` that expands further in 2 entries:
@@ -30,12 +31,12 @@ Consider that this was my first time writing an extension, so don't expect great
 
 
 ##### Based on:
+- https://github.com/paoloantinori/markdown_to_jira
 - https://github.com/FokkeZB/J2M
 - https://github.com/adam-p/markdown-here/
 
 
 ##### Developers
-This plugin is a [web extension](https://developer.mozilla.org/en-US/Add-ons/WebExtensions)
 that runs with Chrome and Firefox. To work around vendor specific issues,
 [Webpack](https://webpack.js.org/) is used to build the packages.
 
